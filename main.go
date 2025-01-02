@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
 
@@ -19,7 +20,7 @@ import (
 // TODO:
 // 1. Add style
 // 2. Add a "get 4 random exercises to work on today" button like JP said
-// 3. Hotkey to launch metronome in Google
+// 3. Hotkey to launch metronome in Google ✅
 
 type model struct {
 	cursor       int                       // Cursor for navigating lists
@@ -31,6 +32,8 @@ type model struct {
 	mode         string                    // Current mode: "view" or "edit"
 	showPopup    bool
 	spinner      spinner.Model
+	showSuccess  bool
+	successTime  time.Time
 }
 
 var popupStyle = lipgloss.NewStyle().
@@ -136,6 +139,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						log.Println("Error saving techniques:", err)
 					}
 				}
+				m.showSuccess = true
+				m.successTime = time.Now().Add(2 * time.Second)
+
 				// Close the popup
 				m.showPopup = false
 				m.input = ""
@@ -207,6 +213,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.keys = getKeys(m.techniques) // Reset keys to main menu techniques
 			}
 		}
+		if m.showSuccess && time.Now().After(m.successTime) {
+			m.showSuccess = false
+		}
 	}
 	var cmd tea.Cmd
 	m.spinner, cmd = m.spinner.Update(msg)
@@ -218,26 +227,36 @@ func (m model) View() string {
 	var b strings.Builder
 
 	if m.currentLevel == "main" {
-		b.WriteString(fmt.Sprintf("What are we working on? %s:\n\n", m.spinner.View()))
+		b.WriteString(nameStyle.Render(fmt.Sprintf("What are we working on? %s", m.spinner.View())))
+		b.WriteString("\n\n")
 		for i, technique := range m.keys {
 			cursor := " "
 			if i == m.cursor {
-				cursor = ">"
+				cursor = "->"
 			}
 			b.WriteString(fmt.Sprintf("%s %s\n", cursor, technique))
 		}
-		b.WriteString("\n[up/down] Navigate • [enter] Select • [m] Metronome • [q] Quit\n")
+		b.WriteString("\n")
+		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [enter] Select • [m] Metronome • [q] Quit\n"))
 	} else if m.currentLevel == "submenu" {
-		b.WriteString(fmt.Sprintf("Exercises for %s:\n\n", m.selectedTech))
+
+		if m.showSuccess {
+			b.WriteString(successStyle.Render("BPM updated!"))
+			b.WriteString("\n")
+		}
+
+		b.WriteString(nameStyle.Render(fmt.Sprintf("Exercises for %s:", m.selectedTech)))
+		b.WriteString("\n\n")
 		exercises := m.techniques[m.selectedTech]
 		for i, exercise := range m.keys {
 			cursor := " "
 			if i == m.cursor {
-				cursor = ">"
+				cursor = "->"
 			}
 			b.WriteString(fmt.Sprintf("%s %s: %d BPM\n", cursor, exercise, exercises[exercise]))
 		}
-		b.WriteString("\n[up/down] Navigate • [e] Edit BPM • [m] Metronome • [esc] Back • [q] Quit\n")
+		b.WriteString("\n")
+		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [enter] Select • [m] Metronome • [q] Quit\n"))
 	}
 
 	// Render the popup if it's visible
