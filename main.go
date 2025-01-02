@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/spinner"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -28,6 +30,7 @@ type model struct {
 	input        string                    // Input buffer for editing
 	mode         string                    // Current mode: "view" or "edit"
 	showPopup    bool
+	spinner      spinner.Model
 }
 
 var popupStyle = lipgloss.NewStyle().
@@ -38,7 +41,7 @@ var popupStyle = lipgloss.NewStyle().
 	Width(40)
 
 func (m model) Init() tea.Cmd {
-	return nil
+	return m.spinner.Tick
 }
 
 func loadTechniques(filename string) (map[string]map[string]int, error) {
@@ -79,12 +82,18 @@ func initialModel() model {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	s := spinner.New()
+	s.Spinner = spinner.Dot
+	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+
 	return model{
 		techniques:   tech,
 		currentLevel: "main",
 		cursor:       0,
 		keys:         getKeys(tech),
 		mode:         "view",
+		spinner:      s,
 	}
 }
 
@@ -169,6 +178,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.currentLevel = "submenu"
 				m.cursor = 0
 				m.keys = getKeys(m.techniques[m.selectedTech]) // Update keys for the selected technique's exercises
+			default:
+				var cmd tea.Cmd
+				m.spinner, cmd = m.spinner.Update(msg)
+				return m, cmd
 			}
 		} else if m.currentLevel == "submenu" {
 			// Submenu navigation
@@ -195,15 +208,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	}
+	var cmd tea.Cmd
+	m.spinner, cmd = m.spinner.Update(msg)
 
-	return m, nil
+	return m, cmd
 }
 
 func (m model) View() string {
 	var b strings.Builder
 
 	if m.currentLevel == "main" {
-		b.WriteString("What are we working on?:\n\n")
+		b.WriteString(fmt.Sprintf("What are we working on? %s:\n\n", m.spinner.View()))
 		for i, technique := range m.keys {
 			cursor := " "
 			if i == m.cursor {
