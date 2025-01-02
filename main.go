@@ -108,6 +108,14 @@ func launchMetronome() error {
 	return err
 }
 
+func launchGallopPicking() error {
+	err := exec.Command("rundll32", "url.dll,FileProtocolHandler", "https://www.youtube.com/watch?v=S-6Iq2wuf0A").Start()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return err
+}
+
 func getKeys[T any](m map[string]T) []string {
 	keys := make([]string, 0, len(m))
 	for key := range m {
@@ -179,11 +187,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.cursor++
 				}
 			case "enter":
-				// Enter submenu for the selected technique
-				m.selectedTech = m.keys[m.cursor]
-				m.currentLevel = "submenu"
-				m.cursor = 0
-				m.keys = getKeys(m.techniques[m.selectedTech]) // Update keys for the selected technique's exercises
+				if m.keys[m.cursor] == "Gallop picking rhythms" {
+					launchGallopPicking()
+				} else {
+					// Enter submenu for the selected technique
+					m.selectedTech = m.keys[m.cursor]
+					m.currentLevel = "submenu"
+					m.cursor = 0
+					m.keys = getKeys(m.techniques[m.selectedTech])
+				} // Update keys for the selected technique's exercises
 			default:
 				var cmd tea.Cmd
 				m.spinner, cmd = m.spinner.Update(msg)
