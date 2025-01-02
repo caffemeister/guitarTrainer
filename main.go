@@ -126,10 +126,17 @@ func launchGallopPicking() error {
 
 func getRandNotes(times int) []string {
 	var notes []string
+	remainingNotes := append([]string(nil), NOTES...)
+
 	for i := 0; i < times; i++ {
-		rIndex := rand.Intn(len(NOTES))
-		notes = append(notes, NOTES[rIndex])
+		if len(remainingNotes) == 0 {
+			break
+		}
+		rIndex := rand.Intn(len(remainingNotes))
+		notes = append(notes, remainingNotes[rIndex])
+		remainingNotes = append(remainingNotes[:rIndex], remainingNotes[rIndex+1:]...)
 	}
+
 	return notes
 }
 
@@ -167,7 +174,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if len(notes) > 0 {
 						notesGotten = true
 					}
-					m.cursor = 0 // Reset cursor to main menu
 				case "left":
 					if m.cursor > 0 {
 						m.cursor--
