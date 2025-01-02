@@ -11,9 +11,6 @@ var nameStyle = lipgloss.NewStyle().
 	Background(lipgloss.Color("#7D56F4")).
 	Bold(true)
 
-var choicesStyle = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("201"))
-
 var successStyle = lipgloss.NewStyle().
 	Align(lipgloss.Center).
 	Background(lipgloss.Color("#04B575")).
