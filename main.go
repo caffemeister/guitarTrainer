@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // TODO:
@@ -26,7 +27,15 @@ type model struct {
 	keys         []string                  // Ordered keys for the current menu
 	input        string                    // Input buffer for editing
 	mode         string                    // Current mode: "view" or "edit"
+	showPopup    bool
 }
+
+var popupStyle = lipgloss.NewStyle().
+	Border(lipgloss.RoundedBorder()).
+	BorderForeground(lipgloss.Color("62")).
+	Padding(1, 2).
+	Align(lipgloss.Center).
+	Width(40)
 
 func (m model) Init() tea.Cmd {
 	return nil
@@ -102,8 +111,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		key := msg.String()
 
-		if m.mode == "edit" {
-			// Handle editing mode
+		// Handle the popup mode
+		if m.showPopup {
 			switch key {
 			case "enter":
 				// Save the new BPM
@@ -118,19 +127,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						log.Println("Error saving techniques:", err)
 					}
 				}
-				m.mode = "view"
+				// Close the popup
+				m.showPopup = false
 				m.input = ""
 			case "esc":
-				// Cancel editing
-				m.mode = "view"
+				// Close the popup without saving
+				m.showPopup = false
+				m.input = ""
 			default:
+				// Append key to input for editing
 				m.input += key
 			}
 			return m, nil
 		}
 
+		// Main menu navigation
 		if m.currentLevel == "main" {
-			// Handle main menu
 			switch key {
 			case "q":
 				return m, tea.Quit
@@ -152,7 +164,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.keys = getKeys(m.techniques[m.selectedTech]) // Update keys for the selected technique's exercises
 			}
 		} else if m.currentLevel == "submenu" {
-			// Handle submenu
+			// Submenu navigation
 			switch key {
 			case "q":
 				return m, tea.Quit
@@ -165,8 +177,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.cursor++
 				}
 			case "e":
-				// Enter edit mode
-				m.mode = "edit"
+				// Open the popup for editing BPM
+				m.showPopup = true
 				m.input = ""
 			case "esc":
 				// Return to main menu
@@ -203,10 +215,17 @@ func (m model) View() string {
 			}
 			b.WriteString(fmt.Sprintf("%s %s: %d BPM\n", cursor, exercise, exercises[exercise]))
 		}
-		if m.mode == "edit" {
-			b.WriteString(fmt.Sprintf("\nEditing %s BPM: %s\n", m.keys[m.cursor], m.input))
-		}
 		b.WriteString("\n[up/down] Navigate • [e] Edit BPM • [m] Metronome • [esc] Back • [q] Quit\n")
+	}
+
+	// Render the popup if it's visible
+	if m.showPopup {
+		popupContent := fmt.Sprintf(
+			"Editing %s BPM\n\n%s\n\n[enter] Save • [esc] Cancel",
+			m.keys[m.cursor],
+			m.input,
+		)
+		b.WriteString("\n" + popupStyle.Render(popupContent))
 	}
 
 	return b.String()

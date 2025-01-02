@@ -1,7 +1,7 @@
 {
   "Alternate Picking": {
     "JP inside picking": 100,
-    "Syn 1": 130,
+    "Syn 1": 120,
     "Syn 2": 100,
     "Syn 3": 100,
     "Syn 4": 100,
@@ -17,7 +17,7 @@
   "Warmup": {
     "4 NPS": 110,
     "One note lower 4 NPS": 110,
-    "Spider exercise": 80,
-    "Rhythm training": 100
+    "Rhythm training": 100,
+    "Spider exercise": 80
   }
 }
