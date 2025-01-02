@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"os/exec"
 	"sort"
@@ -21,6 +22,7 @@ import (
 // 1. Add style ✅
 // 2. Add a "get 4 random exercises to work on today" button like JP said
 // 3. Hotkey to launch metronome in Google ✅
+// 4. Integrate the python "find notes" trainer thing
 
 type model struct {
 	cursor       int                       // Cursor for navigating lists
@@ -37,7 +39,10 @@ type model struct {
 }
 
 // Add the names of all techniques that have hotkeys assigned to them here
-var hotkeys = []string{"Gallop picking rhythms"}
+var HOTKEYS = []string{"Gallop picking rhythms"}
+var NOTES = []string{"A", "B", "C", "D", "E", "F", "G", "A#", "C#", "D#", "G#"}
+var notesGotten bool
+var notes []string
 
 var popupStyle = lipgloss.NewStyle().
 	Border(lipgloss.RoundedBorder()).
@@ -119,6 +124,15 @@ func launchGallopPicking() error {
 	return err
 }
 
+func getRandNotes(times int) []string {
+	var notes []string
+	for i := 0; i < times; i++ {
+		rIndex := rand.Intn(len(NOTES))
+		notes = append(notes, NOTES[rIndex])
+	}
+	return notes
+}
+
 func getKeys[T any](m map[string]T) []string {
 	keys := make([]string, 0, len(m))
 	for key := range m {
@@ -134,44 +148,80 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		key := msg.String()
 
-		// Handle the popup mode
-		if m.showPopup {
-			switch key {
-			case "enter":
-				// Save the new BPM
-				bpm, err := strconv.Atoi(strings.TrimSpace(m.input))
-				if err == nil {
-					exercise := m.keys[m.cursor]
-					m.techniques[m.selectedTech][exercise] = bpm
-
-					// Save the changes to the JSON file
-					err = saveTechniques("techniques.json", m.techniques)
-					if err != nil {
-						log.Println("Error saving techniques:", err)
+		// Handle interaction in the "noteLocation" level
+		if m.currentLevel == "noteLocation" {
+			if m.showPopup {
+				// Handle the input inside the noteLocation popup
+				switch key {
+				case "esc":
+					// Cancel the mini-game and go back to the main menu
+					m.showPopup = false
+					m.currentLevel = "main"
+					m.cursor = 0
+				case "q":
+					return m, tea.Quit
+				case "enter":
+					// Save the selected number
+					selectedNumber := m.cursor + 1 // Convert index to number (1-9)
+					notes = getRandNotes(selectedNumber)
+					if len(notes) > 0 {
+						notesGotten = true
 					}
-					m.showSuccess = true
-					m.successTime = time.Now().Add(3 * time.Second)
+					m.cursor = 0 // Reset cursor to main menu
+				case "left":
+					if m.cursor > 0 {
+						m.cursor--
+					}
+				case "right":
+					if m.cursor < 8 {
+						m.cursor++
+					}
 				}
-
-				// Close the popup
-				m.showPopup = false
-				m.input = ""
-			case "esc":
-				// Close the popup without saving
-				m.showPopup = false
-				m.input = ""
-			case "backspace":
-				// Remove the last character from the input
-				if len(m.input) > 0 {
-					m.input = m.input[:len(m.input)-1]
-				}
-			default:
-				// Allow only numerical input (0-9)
-				if key >= "0" && key <= "9" {
-					m.input += key
-				}
+				return m, nil
 			}
 			return m, nil
+		}
+
+		// Handle popup mode (submenu and noteLocation)
+		if m.currentLevel == "submenu" {
+			if m.showPopup {
+				switch key {
+				case "enter":
+					// Save BPM if in edit mode
+					bpm, err := strconv.Atoi(strings.TrimSpace(m.input))
+					if err == nil {
+						exercise := m.keys[m.cursor]
+						m.techniques[m.selectedTech][exercise] = bpm
+
+						// Save to JSON file
+						err = saveTechniques("techniques.json", m.techniques)
+						if err != nil {
+							log.Println("Error saving techniques:", err)
+						}
+						m.showSuccess = true
+						m.successTime = time.Now().Add(3 * time.Second)
+					}
+
+					// Close the popup
+					m.showPopup = false
+					m.input = ""
+				case "esc":
+					// Close the popup without saving
+					m.showPopup = false
+					m.input = ""
+				case "backspace":
+					// Remove last character from the input
+					if len(m.input) > 0 {
+						m.input = m.input[:len(m.input)-1]
+					}
+				default:
+					// Allow only numerical input
+					if key >= "0" && key <= "9" {
+						m.input += key
+					}
+				}
+				return m, nil
+			}
 		}
 
 		// Main menu navigation
@@ -192,13 +242,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "enter":
 				if m.keys[m.cursor] == "Gallop picking rhythms" {
 					launchGallopPicking()
+				} else if m.keys[m.cursor] == "Note Location" {
+					// Enter the Note Location mini-game
+					m.currentLevel = "noteLocation"
+					m.showPopup = true
+					m.cursor = 0
 				} else {
 					// Enter submenu for the selected technique
 					m.selectedTech = m.keys[m.cursor]
 					m.currentLevel = "submenu"
 					m.cursor = 0
-					m.keys = getKeys(m.techniques[m.selectedTech])
-				} // Update keys for the selected technique's exercises
+					m.keys = getKeys(m.techniques[m.selectedTech]) // Update keys for the submenu
+				}
 			default:
 				var cmd tea.Cmd
 				m.spinner, cmd = m.spinner.Update(msg)
@@ -241,6 +296,48 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	var b strings.Builder
 
+	// Rendering for noteLocation mini-game
+	if m.currentLevel == "noteLocation" {
+		b.WriteString(nameStyle.Render(fmt.Sprintf("Let's practice locating notes! %s", m.spinner.View())))
+		b.WriteString("\n")
+		s := "Select number of notes:\n\n"
+
+		if m.showPopup && !notesGotten {
+			for i := 1; i <= 9; i++ {
+				cursor := " "
+				if m.cursor == i-1 {
+					cursor = "->" // Highlight the selected number
+				}
+				s += fmt.Sprintf("%s %d ", cursor, i)
+			}
+			// Render the popup style around the content
+			b.WriteString("\n")
+			b.WriteString(popupStyle.Render(s)) // Apply the popup style to the content
+		}
+
+		if m.showPopup && notesGotten {
+			s := "Select number of notes:\n\n"
+			for i := 1; i <= 9; i++ {
+				cursor := " "
+				if m.cursor == i-1 {
+					cursor = "->" // Highlight the selected number
+				}
+				s += fmt.Sprintf("%s %d ", cursor, i)
+			}
+			s += "\n--------------------------------\n\n"
+			for _, note := range notes {
+				s += note + "  "
+			}
+			b.WriteString(popupStyle.Render(s))
+		}
+
+		b.WriteString("\n")
+		b.WriteString(navGuideStyle.Render("[left/right] Navigate • [enter] Select •"))
+		b.WriteString(hotkeyStyle.Render(" [m] Metronome "))
+		b.WriteString(navGuideStyle.Render("• [q] Quit\n"))
+	}
+
+	// Main menu rendering
 	if m.currentLevel == "main" {
 		if m.showSuccess {
 			b.WriteString(successStyle.Render("BPM updated!"))
@@ -255,7 +352,7 @@ func (m model) View() string {
 				cursor = "->"
 			}
 			techniqueIsHotkey := false
-			for _, h := range hotkeys {
+			for _, h := range HOTKEYS {
 				if h == technique {
 					techniqueIsHotkey = true
 					break
@@ -264,17 +361,19 @@ func (m model) View() string {
 			if techniqueIsHotkey {
 				b.WriteString(hotkeyStyle.Render(fmt.Sprintf("%s %s", cursor, technique)))
 				b.WriteString("\n")
+			} else if technique == "Note Location" {
+				b.WriteString(noteLocationStyle.Render(fmt.Sprintf("%s %s", cursor, technique)))
+				b.WriteString("\n")
 			} else {
 				b.WriteString(fmt.Sprintf("%s %s\n", cursor, technique))
 			}
-
 		}
 		b.WriteString("\n")
 		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [enter] Select •"))
 		b.WriteString(hotkeyStyle.Render(" [m] Metronome "))
 		b.WriteString(navGuideStyle.Render("• [q] Quit\n"))
 	} else if m.currentLevel == "submenu" {
-
+		// Submenu rendering
 		if m.showSuccess {
 			b.WriteString(successStyle.Render("BPM updated!"))
 			b.WriteString("\n")
@@ -296,8 +395,8 @@ func (m model) View() string {
 		b.WriteString(navGuideStyle.Render("• [q] Quit\n"))
 	}
 
-	// Render the popup if it's visible
-	if m.showPopup {
+	// Render the popup for editing BPM (only if in submenu or noteLocation)
+	if (m.currentLevel == "submenu" || m.currentLevel != "noteLocation") && m.showPopup {
 		popupContent := fmt.Sprintf(
 			"Editing [%s] BPM\n\n%s\n\n[enter] Save • [esc] Cancel",
 			m.keys[m.cursor],

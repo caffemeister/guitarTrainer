@@ -22,3 +22,6 @@ var successStyle = lipgloss.NewStyle().
 
 var hotkeyStyle = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("6"))
+
+var noteLocationStyle = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("3"))
