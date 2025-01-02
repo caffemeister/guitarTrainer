@@ -18,7 +18,7 @@ import (
 )
 
 // TODO:
-// 1. Add style
+// 1. Add style ✅
 // 2. Add a "get 4 random exercises to work on today" button like JP said
 // 3. Hotkey to launch metronome in Google ✅
 

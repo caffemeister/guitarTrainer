@@ -1,4 +1,9 @@
 {
+  "Warmup": {
+    "4 NPS": 110,
+    "One note lower 4 NPS": 110,
+    "Spider exercise": 80
+  },
   "Alternate Picking": {
     "JP inside picking": 100,
     "Syn 1": 120,
@@ -14,10 +19,23 @@
     "Syn 3": 100,
     "Syn 4": 100
   },
-  "Gallop picking rhythms": {},
-  "Warmup": {
-    "4 NPS": 110,
-    "One note lower 4 NPS": 110,
-    "Spider exercise": 80
-  }
+  "Legato": {
+    "Syn 1": 100,
+    "Syn 2": 100,
+    "Syn 3": 100,
+    "Syn 4": 100
+  },
+  "Sweep Picking": {
+    "Syn 1": 100,
+    "Syn 2": 100,
+    "Syn 3": 100,
+    "Syn 4": 100
+  },
+  "Tapping": {
+    "Syn 1": 100,
+    "Syn 2": 100,
+    "Syn 3": 100,
+    "Syn 4": 100
+  },
+  "Gallop picking rhythms": {}
 }
