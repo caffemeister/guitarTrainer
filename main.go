@@ -134,9 +134,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Close the popup without saving
 				m.showPopup = false
 				m.input = ""
+			case "backspace":
+				// Remove the last character from the input
+				if len(m.input) > 0 {
+					m.input = m.input[:len(m.input)-1]
+				}
 			default:
-				// Append key to input for editing
-				m.input += key
+				// Allow only numerical input (0-9)
+				if key >= "0" && key <= "9" {
+					m.input += key
+				}
 			}
 			return m, nil
 		}
@@ -221,7 +228,7 @@ func (m model) View() string {
 	// Render the popup if it's visible
 	if m.showPopup {
 		popupContent := fmt.Sprintf(
-			"Editing %s BPM\n\n%s\n\n[enter] Save • [esc] Cancel",
+			"Editing [%s] BPM\n\n%s\n\n[enter] Save • [esc] Cancel",
 			m.keys[m.cursor],
 			m.input,
 		)
