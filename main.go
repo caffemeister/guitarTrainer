@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"sort"
 	"strconv"
 	"strings"
@@ -78,6 +79,14 @@ func initialModel() model {
 	}
 }
 
+func launchMetronome() error {
+	err := exec.Command("rundll32", "url.dll,FileProtocolHandler", "https://www.google.com/search?q=metronome").Start()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return err
+}
+
 func getKeys[T any](m map[string]T) []string {
 	keys := make([]string, 0, len(m))
 	for key := range m {
@@ -125,6 +134,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch key {
 			case "q":
 				return m, tea.Quit
+			case "m":
+				launchMetronome()
 			case "up":
 				if m.cursor > 0 {
 					m.cursor--
@@ -173,7 +184,7 @@ func (m model) View() string {
 	var b strings.Builder
 
 	if m.currentLevel == "main" {
-		b.WriteString("Select a Technique:\n\n")
+		b.WriteString("What are we working on?:\n\n")
 		for i, technique := range m.keys {
 			cursor := " "
 			if i == m.cursor {
@@ -181,7 +192,7 @@ func (m model) View() string {
 			}
 			b.WriteString(fmt.Sprintf("%s %s\n", cursor, technique))
 		}
-		b.WriteString("\n[up/down] Navigate • [enter] Select • [q] Quit\n")
+		b.WriteString("\n[up/down] Navigate • [enter] Select • [m] Metronome • [q] Quit\n")
 	} else if m.currentLevel == "submenu" {
 		b.WriteString(fmt.Sprintf("Exercises for %s:\n\n", m.selectedTech))
 		exercises := m.techniques[m.selectedTech]
@@ -195,7 +206,7 @@ func (m model) View() string {
 		if m.mode == "edit" {
 			b.WriteString(fmt.Sprintf("\nEditing %s BPM: %s\n", m.keys[m.cursor], m.input))
 		}
-		b.WriteString("\n[up/down] Navigate • [e] Edit BPM • [esc] Back • [q] Quit\n")
+		b.WriteString("\n[up/down] Navigate • [e] Edit BPM • [m] Metronome • [esc] Back • [q] Quit\n")
 	}
 
 	return b.String()
