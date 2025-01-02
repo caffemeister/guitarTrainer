@@ -36,6 +36,9 @@ type model struct {
 	successTime  time.Time
 }
 
+// Add the names of all techniques that have hotkeys assigned to them here
+var hotkeys = []string{"Gallop picking rhythms"}
+
 var popupStyle = lipgloss.NewStyle().
 	Border(lipgloss.RoundedBorder()).
 	BorderForeground(lipgloss.Color("62")).
@@ -146,9 +149,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if err != nil {
 						log.Println("Error saving techniques:", err)
 					}
+					m.showSuccess = true
+					m.successTime = time.Now().Add(3 * time.Second)
 				}
-				m.showSuccess = true
-				m.successTime = time.Now().Add(2 * time.Second)
 
 				// Close the popup
 				m.showPopup = false
@@ -239,6 +242,11 @@ func (m model) View() string {
 	var b strings.Builder
 
 	if m.currentLevel == "main" {
+		if m.showSuccess {
+			b.WriteString(successStyle.Render("BPM updated!"))
+			b.WriteString("\n")
+		}
+
 		b.WriteString(nameStyle.Render(fmt.Sprintf("What are we working on? %s", m.spinner.View())))
 		b.WriteString("\n\n")
 		for i, technique := range m.keys {
@@ -246,10 +254,25 @@ func (m model) View() string {
 			if i == m.cursor {
 				cursor = "->"
 			}
-			b.WriteString(fmt.Sprintf("%s %s\n", cursor, technique))
+			techniqueIsHotkey := false
+			for _, h := range hotkeys {
+				if h == technique {
+					techniqueIsHotkey = true
+					break
+				}
+			}
+			if techniqueIsHotkey {
+				b.WriteString(hotkeyStyle.Render(fmt.Sprintf("%s %s", cursor, technique)))
+				b.WriteString("\n")
+			} else {
+				b.WriteString(fmt.Sprintf("%s %s\n", cursor, technique))
+			}
+
 		}
 		b.WriteString("\n")
-		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [enter] Select • [m] Metronome • [q] Quit\n"))
+		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [enter] Select •"))
+		b.WriteString(hotkeyStyle.Render(" [m] Metronome "))
+		b.WriteString(navGuideStyle.Render("• [q] Quit\n"))
 	} else if m.currentLevel == "submenu" {
 
 		if m.showSuccess {
@@ -268,7 +291,9 @@ func (m model) View() string {
 			b.WriteString(fmt.Sprintf("%s %s: %d BPM\n", cursor, exercise, exercises[exercise]))
 		}
 		b.WriteString("\n")
-		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [enter] Select • [m] Metronome • [q] Quit\n"))
+		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [enter] Select • [e] Edit BPM •"))
+		b.WriteString(hotkeyStyle.Render(" [m] Metronome "))
+		b.WriteString(navGuideStyle.Render("• [q] Quit\n"))
 	}
 
 	// Render the popup if it's visible

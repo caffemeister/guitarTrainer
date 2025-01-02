@@ -9,15 +9,15 @@
     "Syn 9": 100
   },
   "Economy Picking": {
-    "Syn 1": 20,
+    "Syn 1": 100,
     "Syn 2": 100,
     "Syn 3": 100,
     "Syn 4": 100
   },
+  "Gallop picking rhythms": {},
   "Warmup": {
     "4 NPS": 110,
     "One note lower 4 NPS": 110,
     "Spider exercise": 80
-  },
-  "Gallop picking rhythms": {}
+  }
 }

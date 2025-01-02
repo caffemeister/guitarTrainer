@@ -19,3 +19,6 @@ var successStyle = lipgloss.NewStyle().
 	Background(lipgloss.Color("#04B575")).
 	Underline(true).
 	Width(30)
+
+var hotkeyStyle = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("6"))
