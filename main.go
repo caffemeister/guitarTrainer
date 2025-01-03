@@ -167,6 +167,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.cursor = 0
 				case "q":
 					return m, tea.Quit
+				case "m":
+					launchMetronome()
 				case "enter":
 					// Save the selected number
 					selectedNumber := m.cursor + 1 // Convert index to number (1-9)
@@ -215,6 +217,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					// Close the popup without saving
 					m.showPopup = false
 					m.input = ""
+				case "m":
+					launchMetronome()
 				case "backspace":
 					// Remove last character from the input
 					if len(m.input) > 0 {
