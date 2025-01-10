@@ -286,6 +286,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Open the popup for editing BPM
 				m.showPopup = true
 				m.input = ""
+			case "m":
+				launchMetronome()
 			case "esc":
 				// Return to main menu
 				m.currentLevel = "main"
