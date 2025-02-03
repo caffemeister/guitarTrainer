@@ -15,8 +15,8 @@ import (
 )
 
 // TODO:
-// 1. Add style ✅
-// 2. Add a "get 4 random exercises to work on today" button like JP said
+// 1. Add some sorta style ✅
+// 2. Add a "get 4 random exercises to work on today" button ✅
 // 3. Hotkey to launch metronome in Google ✅
 // 4. Integrate the "find notes" trainer thing ✅
 
@@ -27,7 +27,6 @@ type model struct {
 	techniques    map[string]map[string]int // Map of techniques to exercises and their BPMs
 	keys          []string                  // Ordered keys for the current menu
 	input         string                    // Input buffer for editing
-	mode          string                    // Current mode: "view" or "edit"
 	showPopup     bool
 	spinner       spinner.Model
 	showSuccess   bool
@@ -61,7 +60,6 @@ func initialModel() model {
 		currentLevel: "main",
 		cursor:       0,
 		keys:         getKeys(tech),
-		mode:         "view",
 		spinner:      s,
 	}
 }
@@ -100,7 +98,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.input = m.input[:len(m.input)-1]
 				}
 			case "enter":
-				// Save BPM if in edit mode
 				bpm, err := strconv.Atoi(strings.TrimSpace(m.input))
 				if err == nil {
 					exercise := m.fourExercises[m.selectedTech]
@@ -109,7 +106,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.techniques[m.selectedTech][ex] = bpm
 					}
 
-					// Save to JSON file
 					err = saveTechniques("techniques.json", m.techniques)
 					if err != nil {
 						log.Println("Error saving techniques:", err)
@@ -118,7 +114,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.successTime = time.Now().Add(3 * time.Second)
 				}
 
-				// Close the popup
 				m.showPopup = false
 				m.input = ""
 			default:
@@ -128,13 +123,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-		// Handle interaction in the "noteLocation" level
 		if m.currentLevel == "noteLocation" {
 			if m.showPopup {
-				// Handle the input inside the noteLocation popup
 				switch key {
 				case "esc":
-					// Cancel the mini-game and go back to the main menu
 					m.showPopup = false
 					m.currentLevel = "main"
 					m.cursor = 0
@@ -143,7 +135,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case "m":
 					launchMetronome()
 				case "enter":
-					// Save the selected number
 					selectedNumber := m.cursor + 1 // Convert index to number (1-9)
 					notes = getRandNotes(selectedNumber)
 					if len(notes) > 0 {
@@ -163,18 +154,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// Handle popup mode (submenu and noteLocation)
 		if m.currentLevel == "submenu" {
 			if m.showPopup {
 				switch key {
 				case "enter":
-					// Save BPM if in edit mode
 					bpm, err := strconv.Atoi(strings.TrimSpace(m.input))
 					if err == nil {
 						exercise := m.keys[m.cursor]
 						m.techniques[m.selectedTech][exercise] = bpm
 
-						// Save to JSON file
 						err = saveTechniques("techniques.json", m.techniques)
 						if err != nil {
 							log.Println("Error saving techniques:", err)
@@ -183,11 +171,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.successTime = time.Now().Add(3 * time.Second)
 					}
 
-					// Close the popup
 					m.showPopup = false
 					m.input = ""
 				case "esc":
-					// Close the popup without saving
 					m.showPopup = false
 					m.input = ""
 				case "m":
@@ -204,10 +190,33 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 				return m, nil
+			} else {
+				switch key {
+				case "q":
+					return m, tea.Quit
+				case "up":
+					if m.cursor > 0 {
+						m.cursor--
+					}
+				case "down":
+					if m.cursor < len(m.keys)-1 {
+						m.cursor++
+					}
+				case "e":
+					m.showPopup = true
+					m.input = ""
+				case ",":
+					getFourExercises()
+				case "m":
+					launchMetronome()
+				case "esc":
+					m.currentLevel = "main"
+					m.cursor = 0
+					m.keys = getKeys(m.techniques) // Reset keys to main menu techniques
+				}
 			}
 		}
 
-		// Main menu navigation
 		if m.currentLevel == "main" {
 			switch key {
 			case "q":
@@ -237,12 +246,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.keys[m.cursor] == "Gallop picking rhythms" {
 					launchGallopPicking()
 				} else if m.keys[m.cursor] == "Note Location" {
-					// Enter the Note Location mini-game
 					m.currentLevel = "noteLocation"
 					m.showPopup = true
 					m.cursor = 0
 				} else {
-					// Enter submenu for the selected technique
 					m.selectedTech = m.keys[m.cursor]
 					m.currentLevel = "submenu"
 					m.cursor = 0
@@ -252,33 +259,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				var cmd tea.Cmd
 				m.spinner, cmd = m.spinner.Update(msg)
 				return m, cmd
-			}
-		} else if m.currentLevel == "submenu" {
-			// Submenu navigation
-			switch key {
-			case "q":
-				return m, tea.Quit
-			case "up":
-				if m.cursor > 0 {
-					m.cursor--
-				}
-			case "down":
-				if m.cursor < len(m.keys)-1 {
-					m.cursor++
-				}
-			case "e":
-				// Open the popup for editing BPM
-				m.showPopup = true
-				m.input = ""
-			case ",":
-				getFourExercises()
-			case "m":
-				launchMetronome()
-			case "esc":
-				// Return to main menu
-				m.currentLevel = "main"
-				m.cursor = 0
-				m.keys = getKeys(m.techniques) // Reset keys to main menu techniques
 			}
 		}
 		if m.showSuccess && time.Now().After(m.successTime) {
