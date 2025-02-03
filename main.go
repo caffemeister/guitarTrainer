@@ -75,9 +75,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch key {
 			case "q":
 				return m, tea.Quit
+			case "e":
+				m.selectedTech = m.keys[m.cursor]
+				m.showPopup = true
+				m.input = ""
 			case "esc":
-				m.currentLevel = "main"
-				m.cursor = 0
+				if m.showPopup {
+					m.showPopup = false
+				} else {
+					m.showPopup = false
+					m.currentLevel = "main"
+					m.cursor = 0
+				}
 			case "up":
 				if m.cursor > 0 {
 					m.cursor--
@@ -85,6 +94,36 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "down":
 				if m.cursor < len(m.exerciseKeys)-1 {
 					m.cursor++
+				}
+			case "backspace":
+				if len(m.input) > 0 {
+					m.input = m.input[:len(m.input)-1]
+				}
+			case "enter":
+				// Save BPM if in edit mode
+				bpm, err := strconv.Atoi(strings.TrimSpace(m.input))
+				if err == nil {
+					exercise := m.fourExercises[m.selectedTech]
+					for ex := range exercise {
+						m.fourExercises[m.selectedTech][ex] = bpm
+						m.techniques[m.selectedTech][ex] = bpm
+					}
+
+					// Save to JSON file
+					err = saveTechniques("techniques.json", m.techniques)
+					if err != nil {
+						log.Println("Error saving techniques:", err)
+					}
+					m.showSuccess = true
+					m.successTime = time.Now().Add(3 * time.Second)
+				}
+
+				// Close the popup
+				m.showPopup = false
+				m.input = ""
+			default:
+				if key >= "0" && key <= "9" {
+					m.input += key
 				}
 			}
 		}
@@ -256,6 +295,10 @@ func (m model) View() string {
 	var b strings.Builder
 
 	if m.currentLevel == "fourExercises" {
+		if m.showSuccess {
+			b.WriteString(successStyle.Render("BPM updated!"))
+			b.WriteString("\n")
+		}
 		b.WriteString(nameStyle.Render(fmt.Sprintf("The council has decided your fate... %s", m.spinner.View())))
 		b.WriteString("\n")
 
@@ -377,13 +420,22 @@ func (m model) View() string {
 	}
 
 	// Render the popup for editing BPM (only if in submenu or noteLocation)
-	if (m.currentLevel == "submenu" || m.currentLevel != "noteLocation") && m.showPopup {
-		popupContent := fmt.Sprintf(
-			"Editing [%s] BPM\n\n%s\n\n[enter] Save • [esc] Cancel",
-			m.keys[m.cursor],
-			m.input,
-		)
-		b.WriteString("\n" + popupStyle.Render(popupContent))
+	if (m.currentLevel == "submenu" || m.currentLevel == "fourExercises") && m.showPopup {
+		if m.currentLevel == "submenu" {
+			popupContent := fmt.Sprintf(
+				"Editing [%s] BPM\n\n%s\n\n[enter] Save • [esc] Cancel",
+				m.keys[m.cursor],
+				m.input,
+			)
+			b.WriteString("\n" + popupStyle.Render(popupContent))
+		} else if m.currentLevel == "fourExercises" {
+			popupContent := fmt.Sprintf(
+				"Editing [%s] BPM\n\n%s\n\n[enter] Save • [esc] Cancel",
+				m.exerciseKeys[m.cursor],
+				m.input,
+			)
+			b.WriteString("\n" + popupStyle.Render(popupContent))
+		}
 	}
 
 	return b.String()
