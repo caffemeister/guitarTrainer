@@ -279,23 +279,27 @@ func (m model) View() string {
 			b.WriteString(successStyle.Render("BPM updated!"))
 			b.WriteString("\n")
 		}
-		b.WriteString(nameStyle.Render(fmt.Sprintf("The council has decided your fate... %s", m.spinner.View())))
-		b.WriteString("\n")
 
-		for i, key := range m.exerciseKeys {
-			cursor := " "
-			if i == m.cursor {
-				cursor = "->"
+		if !m.showPopup {
+			b.WriteString(nameStyle.Render(fmt.Sprintf("The council has decided your fate... %s", m.spinner.View())))
+			b.WriteString("\n\n")
+
+			for i, key := range m.exerciseKeys {
+				b.WriteString(fmt.Sprintf("%s:\n", key))
+
+				exerc := m.fourExercises[key]
+				exerciseCursor := " "
+				if m.cursor == i {
+					exerciseCursor = "->"
+				}
+				for ex, bpm := range exerc {
+					b.WriteString(fmt.Sprintf("%s %s -- %d BPM\n", exerciseCursor, ex, bpm))
+				}
 			}
-			b.WriteString(fmt.Sprintf("%s %s\n", cursor, key))
-			for ex, bpm := range m.fourExercises[key] {
-				b.WriteString(fmt.Sprintf("\t%s -- %d BPM\n", ex, bpm))
-			}
-			b.WriteString("\n")
 		}
 
 		b.WriteString("\n")
-		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [esc] Back • [q] Quit\n"))
+		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [esc] Back • [e] Edit BPM • [q] Quit\n"))
 	}
 
 	// Rendering for noteLocation mini-game
