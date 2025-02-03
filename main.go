@@ -230,8 +230,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.fourExercises = exerc
 				m.exerciseKeys = getKeys(exerc)
-
-				return m, tea.ClearScreen
 			case "m":
 				launchMetronome()
 			case "up":
