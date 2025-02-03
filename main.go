@@ -131,8 +131,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					// Close the popup without saving
 					m.showPopup = false
 					m.input = ""
-				case ",":
-					getFourExercises()
 				case "m":
 					launchMetronome()
 				case "backspace":
@@ -303,6 +301,8 @@ func (m model) View() string {
 		b.WriteString("\n")
 		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [enter] Select •"))
 		b.WriteString(hotkeyStyle.Render(" [m] Metronome "))
+		b.WriteString(navGuideStyle.Render("•"))
+		b.WriteString(hotkeyStyle.Render(" [,] 4 Random Exercises "))
 		b.WriteString(navGuideStyle.Render("• [q] Quit\n"))
 	} else if m.currentLevel == "submenu" {
 		// Submenu rendering
