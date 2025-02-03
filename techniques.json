@@ -1,17 +1,17 @@
 {
   "Alternate Picking": {
     "JP inside picking": 80,
-    "Syn 1": 130,
+    "Syn 1": 134,
     "Syn 2": 130,
-    "Syn 3": 116,
-    "Syn 4": 100,
+    "Syn 3": 120,
+    "Syn 4": 116,
     "Syn 6": 100,
     "Syn 9": 100
   },
   "Economy Picking": {
     "Syn 1": 100,
     "Syn 2": 100,
-    "Syn 3": 100,
+    "Syn 3": 222,
     "Syn 4": 100
   },
   "Gallop picking rhythms": {},
@@ -19,7 +19,7 @@
     "Syn 1": 100,
     "Syn 2": 100,
     "Syn 3": 100,
-    "Syn 4": 100
+    "Syn 4": 222
   },
   "Note Location": {},
   "Sweep Picking": {
