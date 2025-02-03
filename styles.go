@@ -22,3 +22,10 @@ var hotkeyStyle = lipgloss.NewStyle().
 
 var noteLocationStyle = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("3"))
+
+var popupStyle = lipgloss.NewStyle().
+	Border(lipgloss.RoundedBorder()).
+	BorderForeground(lipgloss.Color("62")).
+	Padding(1, 2).
+	Align(lipgloss.Center).
+	Width(40)

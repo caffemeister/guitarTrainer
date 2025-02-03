@@ -1,13 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"os"
-	"os/exec"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -22,7 +18,7 @@ import (
 // 1. Add style ✅
 // 2. Add a "get 4 random exercises to work on today" button like JP said
 // 3. Hotkey to launch metronome in Google ✅
-// 4. Integrate the python "find notes" trainer thing
+// 4. Integrate the "find notes" trainer thing ✅
 
 type model struct {
 	cursor       int                       // Cursor for navigating lists
@@ -44,48 +40,8 @@ var NOTES = []string{"A", "B", "C", "D", "E", "F", "G", "A#", "C#", "D#", "G#"}
 var notesGotten bool
 var notes []string
 
-var popupStyle = lipgloss.NewStyle().
-	Border(lipgloss.RoundedBorder()).
-	BorderForeground(lipgloss.Color("62")).
-	Padding(1, 2).
-	Align(lipgloss.Center).
-	Width(40)
-
 func (m model) Init() tea.Cmd {
 	return m.spinner.Tick
-}
-
-func loadTechniques(filename string) (map[string]map[string]int, error) {
-	// Read the file
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-
-	// Parse the JSON data into a map
-	var techniques map[string]map[string]int
-	err = json.Unmarshal(data, &techniques)
-	if err != nil {
-		return nil, err
-	}
-
-	return techniques, nil
-}
-
-func saveTechniques(filename string, techniques map[string]map[string]int) error {
-	// Convert techniques map to JSON
-	data, err := json.MarshalIndent(techniques, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	// Write the data to the file
-	err = os.WriteFile(filename, data, 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func initialModel() model {
@@ -106,48 +62,6 @@ func initialModel() model {
 		mode:         "view",
 		spinner:      s,
 	}
-}
-
-func launchMetronome() error {
-	err := exec.Command("rundll32", "url.dll,FileProtocolHandler", "https://www.google.com/search?q=metronome").Start()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	return err
-}
-
-func launchGallopPicking() error {
-	err := exec.Command("rundll32", "url.dll,FileProtocolHandler", "https://www.youtube.com/watch?v=S-6Iq2wuf0A").Start()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	return err
-}
-
-func getRandNotes(times int) []string {
-	var notes []string
-	remainingNotes := append([]string(nil), NOTES...)
-
-	for i := 0; i < times; i++ {
-		if len(remainingNotes) == 0 {
-			break
-		}
-		rIndex := rand.Intn(len(remainingNotes))
-		notes = append(notes, remainingNotes[rIndex])
-		remainingNotes = append(remainingNotes[:rIndex], remainingNotes[rIndex+1:]...)
-	}
-
-	return notes
-}
-
-func getKeys[T any](m map[string]T) []string {
-	keys := make([]string, 0, len(m))
-	for key := range m {
-		keys = append(keys, key)
-	}
-	// Sort the keys to ensure consistent ordering
-	sort.Strings(keys)
-	return keys
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -217,6 +131,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					// Close the popup without saving
 					m.showPopup = false
 					m.input = ""
+				case ",":
+					getFourExercises()
 				case "m":
 					launchMetronome()
 				case "backspace":
@@ -239,6 +155,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch key {
 			case "q":
 				return m, tea.Quit
+			case ",":
+				getFourExercises()
 			case "m":
 				launchMetronome()
 			case "up":
@@ -286,6 +204,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Open the popup for editing BPM
 				m.showPopup = true
 				m.input = ""
+			case ",":
+				getFourExercises()
 			case "m":
 				launchMetronome()
 			case "esc":
