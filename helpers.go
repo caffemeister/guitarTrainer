@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -114,7 +113,5 @@ func getFourExercises() (map[string]map[string]int, error) {
 		bpm := tech[category][randExerc]
 		chosenMap[category][randExerc] = bpm
 	}
-
-	fmt.Println(chosenMap)
 	return chosenMap, nil
 }

@@ -21,17 +21,19 @@ import (
 // 4. Integrate the "find notes" trainer thing ✅
 
 type model struct {
-	cursor       int                       // Cursor for navigating lists
-	currentLevel string                    // Current level: "main" or "submenu"
-	selectedTech string                    // Currently selected technique in "main" menu
-	techniques   map[string]map[string]int // Map of techniques to exercises and their BPMs
-	keys         []string                  // Ordered keys for the current menu
-	input        string                    // Input buffer for editing
-	mode         string                    // Current mode: "view" or "edit"
-	showPopup    bool
-	spinner      spinner.Model
-	showSuccess  bool
-	successTime  time.Time
+	cursor        int                       // Cursor for navigating lists
+	currentLevel  string                    // Current level: "main" or "submenu"
+	selectedTech  string                    // Currently selected technique in "main" menu
+	techniques    map[string]map[string]int // Map of techniques to exercises and their BPMs
+	keys          []string                  // Ordered keys for the current menu
+	input         string                    // Input buffer for editing
+	mode          string                    // Current mode: "view" or "edit"
+	showPopup     bool
+	spinner       spinner.Model
+	showSuccess   bool
+	successTime   time.Time
+	fourExercises map[string]map[string]int
+	exerciseKeys  []string
 }
 
 // Add the names of all techniques that have hotkeys assigned to them here
@@ -68,6 +70,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		key := msg.String()
+
+		if m.currentLevel == "fourExercises" {
+			switch key {
+			case "q":
+				return m, tea.Quit
+			case "esc":
+				m.currentLevel = "main"
+				m.cursor = 0
+			case "up":
+				if m.cursor > 0 {
+					m.cursor--
+				}
+			case "down":
+				if m.cursor < len(m.exerciseKeys)-1 {
+					m.cursor++
+				}
+			}
+		}
 
 		// Handle interaction in the "noteLocation" level
 		if m.currentLevel == "noteLocation" {
@@ -154,7 +174,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "q":
 				return m, tea.Quit
 			case ",":
-				getFourExercises()
+				m.currentLevel = "fourExercises"
+				m.cursor = 0
+				exerc, err := getFourExercises()
+				if err != nil {
+					log.Fatal(err)
+				}
+				m.fourExercises = exerc
+				m.exerciseKeys = getKeys(exerc)
+
+				return m, tea.ClearScreen
 			case "m":
 				launchMetronome()
 			case "up":
@@ -225,6 +254,26 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	var b strings.Builder
+
+	if m.currentLevel == "fourExercises" {
+		b.WriteString(nameStyle.Render(fmt.Sprintf("The council has decided your fate... %s", m.spinner.View())))
+		b.WriteString("\n")
+
+		for i, key := range m.exerciseKeys {
+			cursor := " "
+			if i == m.cursor {
+				cursor = "->"
+			}
+			b.WriteString(fmt.Sprintf("%s %s\n", cursor, key))
+			for ex, bpm := range m.fourExercises[key] {
+				b.WriteString(fmt.Sprintf("\t%s -- %d BPM\n", ex, bpm))
+			}
+			b.WriteString("\n")
+		}
+
+		b.WriteString("\n")
+		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [esc] Back • [q] Quit\n"))
+	}
 
 	// Rendering for noteLocation mini-game
 	if m.currentLevel == "noteLocation" {
