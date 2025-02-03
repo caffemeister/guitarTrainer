@@ -74,7 +74,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "q":
 				return m, tea.Quit
 			case "e":
-				m.selectedTech = m.keys[m.cursor]
+				m.selectedTech = m.exerciseKeys[m.cursor]
 				m.showPopup = true
 				m.input = ""
 			case "esc":
