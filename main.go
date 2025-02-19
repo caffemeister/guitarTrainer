@@ -393,7 +393,8 @@ func (m model) View() string {
 
 		b.WriteString(nameStyle.Render(fmt.Sprintf("Exercises for %s:", m.selectedTech)))
 		b.WriteString("\n")
-		b.WriteString("\t\t\t\t\t\tLast month\n")
+		strng := fmt.Sprintf("%48sLast month\n", " ")
+		b.WriteString(strng)
 		exercises := m.techniques[m.selectedTech]
 		trackerExercises := m.trackerTechniques[m.selectedTech]
 		for i, exercise := range m.keys {
@@ -402,7 +403,7 @@ func (m model) View() string {
 				cursor = "->"
 			}
 			output := fmt.Sprintf("%s %s: %d BPM", cursor, exercise, exercises[exercise])
-			lastMonthPosition := 51
+			lastMonthPosition := 50
 			outputLength := len(output)
 
 			paddingLength := lastMonthPosition - outputLength
@@ -412,7 +413,7 @@ func (m model) View() string {
 
 			padding := strings.Repeat(" ", paddingLength)
 
-			b.WriteString(output + padding + strconv.Itoa(trackerExercises[exercise]) + "\n")
+			b.WriteString(output + padding + cursor + " " + strconv.Itoa(trackerExercises[exercise]) + "\n")
 		}
 		b.WriteString("\n")
 		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [enter] Select • [e] Edit BPM •"))
