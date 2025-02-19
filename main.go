@@ -19,20 +19,22 @@ import (
 // 2. Add a "get 4 random exercises to work on today" button ✅
 // 3. Hotkey to launch metronome in Google ✅
 // 4. Integrate the "find notes" trainer thing ✅
+// 5. Add tracker to track diff of scores per month ✅
 
 type model struct {
-	cursor        int                       // Cursor for navigating lists
-	currentLevel  string                    // Current level: "main" or "submenu"
-	selectedTech  string                    // Currently selected technique in "main" menu
-	techniques    map[string]map[string]int // Map of techniques to exercises and their BPMs
-	keys          []string                  // Ordered keys for the current menu
-	input         string                    // Input buffer for editing
-	showPopup     bool
-	spinner       spinner.Model
-	showSuccess   bool
-	successTime   time.Time
-	fourExercises map[string]map[string]int
-	exerciseKeys  []string
+	cursor            int
+	currentLevel      string
+	selectedTech      string
+	techniques        map[string]map[string]int
+	trackerTechniques map[string]map[string]int
+	keys              []string
+	input             string
+	showPopup         bool
+	spinner           spinner.Model
+	showSuccess       bool
+	successTime       time.Time
+	fourExercises     map[string]map[string]int
+	exerciseKeys      []string
 }
 
 // Add the names of all techniques that have hotkeys assigned to them here
@@ -50,17 +52,22 @@ func initialModel() model {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	trackerValues, err := loadTechniques("tracker.json")
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
 	return model{
-		techniques:   tech,
-		currentLevel: "main",
-		cursor:       0,
-		keys:         getKeys(tech),
-		spinner:      s,
+		techniques:        tech,
+		trackerTechniques: trackerValues,
+		currentLevel:      "main",
+		cursor:            0,
+		keys:              getKeys(tech),
+		spinner:           s,
 	}
 }
 
@@ -135,7 +142,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case "m":
 					launchMetronome()
 				case "enter":
-					selectedNumber := m.cursor + 1 // Convert index to number (1-9)
+					selectedNumber := m.cursor + 1 // index to number (1-9)
 					notes = getRandNotes(selectedNumber)
 					if len(notes) > 0 {
 						notesGotten = true
@@ -300,7 +307,6 @@ func (m model) View() string {
 		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [esc] Back • [e] Edit BPM • [q] Quit\n"))
 	}
 
-	// Rendering for noteLocation mini-game
 	if m.currentLevel == "noteLocation" {
 		b.WriteString(nameStyle.Render(fmt.Sprintf("Let's practice locating notes! %s", m.spinner.View())))
 		b.WriteString("\n")
@@ -310,13 +316,12 @@ func (m model) View() string {
 			for i := 1; i <= 9; i++ {
 				cursor := " "
 				if m.cursor == i-1 {
-					cursor = "->" // Highlight the selected number
+					cursor = "->"
 				}
 				s += fmt.Sprintf("%s %d ", cursor, i)
 			}
-			// Render the popup style around the content
 			b.WriteString("\n")
-			b.WriteString(popupStyle.Render(s)) // Apply the popup style to the content
+			b.WriteString(popupStyle.Render(s))
 		}
 
 		if m.showPopup && notesGotten {
@@ -324,7 +329,7 @@ func (m model) View() string {
 			for i := 1; i <= 9; i++ {
 				cursor := " "
 				if m.cursor == i-1 {
-					cursor = "->" // Highlight the selected number
+					cursor = "->"
 				}
 				s += fmt.Sprintf("%s %d ", cursor, i)
 			}
@@ -341,7 +346,6 @@ func (m model) View() string {
 		b.WriteString(navGuideStyle.Render("• [q] Quit\n"))
 	}
 
-	// Main menu rendering
 	if m.currentLevel == "main" {
 		if m.showSuccess {
 			b.WriteString(successStyle.Render("BPM updated!"))
@@ -379,21 +383,34 @@ func (m model) View() string {
 		b.WriteString(hotkeyStyle.Render(" [,] 4 Random Exercises "))
 		b.WriteString(navGuideStyle.Render("• [q] Quit\n"))
 	} else if m.currentLevel == "submenu" {
-		// Submenu rendering
 		if m.showSuccess {
 			b.WriteString(successStyle.Render("BPM updated!"))
 			b.WriteString("\n")
 		}
 
 		b.WriteString(nameStyle.Render(fmt.Sprintf("Exercises for %s:", m.selectedTech)))
-		b.WriteString("\n\n")
+		b.WriteString("\n")
+		strng := fmt.Sprintf("%48sLast month\n", " ")
+		b.WriteString(strng)
 		exercises := m.techniques[m.selectedTech]
+		trackerExercises := m.trackerTechniques[m.selectedTech]
 		for i, exercise := range m.keys {
 			cursor := " "
 			if i == m.cursor {
 				cursor = "->"
 			}
-			b.WriteString(fmt.Sprintf("%s %s: %d BPM\n", cursor, exercise, exercises[exercise]))
+			output := fmt.Sprintf("%s %s: %d BPM", cursor, exercise, exercises[exercise])
+			lastMonthPosition := 50
+			outputLength := len(output)
+
+			paddingLength := lastMonthPosition - outputLength
+			if paddingLength < 0 {
+				paddingLength = 0
+			}
+
+			padding := strings.Repeat(" ", paddingLength)
+
+			b.WriteString(output + padding + cursor + " " + strconv.Itoa(trackerExercises[exercise]) + "\n")
 		}
 		b.WriteString("\n")
 		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [enter] Select • [e] Edit BPM •"))
@@ -424,7 +441,26 @@ func (m model) View() string {
 }
 
 func main() {
+	// check if tracker exists, if not, create one
+	_, err := os.Stat("tracker.json")
+	if os.IsNotExist(err) {
+		err := spawnTracker()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 
+	// if enough time has passed, update tracker.json
+	currentTime := time.Now()
+	lastUpdateTime, err := getLastUpdateTime()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if currentTime.After(lastUpdateTime.AddDate(0, 1, 0)) {
+		updateTrackerJSON()
+	}
+
+	// run program
 	p := tea.NewProgram(initialModel())
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error starting app: %v", err)

@@ -1,0 +1,44 @@
+{
+  "Alternate Picking": {
+    "JP inside picking": 80,
+    "Syn 1": 134,
+    "Syn 2": 130,
+    "Syn 3": 130,
+    "Syn 4": 120,
+    "Syn 6": 100,
+    "Syn 9": 100,
+    "Triplet picking": 70
+  },
+  "Economy Picking": {
+    "Syn 1": 124,
+    "Syn 2": 108,
+    "Syn 3": 90,
+    "Syn 4": 80
+  },
+  "Gallop picking rhythms": {},
+  "Legato": {
+    "Syn 1": 100,
+    "Syn 2": 100,
+    "Syn 3": 100,
+    "Syn 4": 100
+  },
+  "Note Location": {},
+  "Sweep Picking": {
+    "Syn 1": 100,
+    "Syn 2": 100,
+    "Syn 3": 100,
+    "Syn 4": 100
+  },
+  "Tapping": {
+    "Syn 1": 100,
+    "Syn 2": 100,
+    "Syn 3": 100,
+    "Syn 4": 100
+  },
+  "Warmup": {
+    "4 NPS": 120,
+    "JP Inside picking": 78,
+    "One note lower 4 NPS": 110,
+    "Spider exercise": 80
+  }
+}
