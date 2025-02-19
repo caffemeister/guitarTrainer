@@ -400,7 +400,7 @@ func (m model) View() string {
 				cursor = "->"
 			}
 			output := fmt.Sprintf("%s %s: %d BPM", cursor, exercise, exercises[exercise])
-			lastMonthPosition := 50
+			lastMonthPosition := 49
 			outputLength := len(output)
 
 			paddingLength := lastMonthPosition - outputLength
@@ -410,7 +410,7 @@ func (m model) View() string {
 
 			padding := strings.Repeat(" ", paddingLength)
 
-			b.WriteString(output + padding + cursor + " " + strconv.Itoa(trackerExercises[exercise]) + "\n")
+			b.WriteString(output + padding + cursor + " " + strconv.Itoa(trackerExercises[exercise]) + " BPM" + "\n")
 		}
 		b.WriteString("\n")
 		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [enter] Select • [e] Edit BPM •"))
