@@ -19,6 +19,7 @@ import (
 // 2. Add a "get 4 random exercises to work on today" button ✅
 // 3. Hotkey to launch metronome in Google ✅
 // 4. Integrate the "find notes" trainer thing ✅
+// 5. Add tracker to track diff of scores per month
 
 type model struct {
 	cursor        int                       // Cursor for navigating lists
@@ -300,7 +301,7 @@ func (m model) View() string {
 		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [esc] Back • [e] Edit BPM • [q] Quit\n"))
 	}
 
-	// Rendering for noteLocation mini-game
+	// Rendering for noteLocation
 	if m.currentLevel == "noteLocation" {
 		b.WriteString(nameStyle.Render(fmt.Sprintf("Let's practice locating notes! %s", m.spinner.View())))
 		b.WriteString("\n")
@@ -310,13 +311,12 @@ func (m model) View() string {
 			for i := 1; i <= 9; i++ {
 				cursor := " "
 				if m.cursor == i-1 {
-					cursor = "->" // Highlight the selected number
+					cursor = "->"
 				}
 				s += fmt.Sprintf("%s %d ", cursor, i)
 			}
-			// Render the popup style around the content
 			b.WriteString("\n")
-			b.WriteString(popupStyle.Render(s)) // Apply the popup style to the content
+			b.WriteString(popupStyle.Render(s))
 		}
 
 		if m.showPopup && notesGotten {
@@ -324,7 +324,7 @@ func (m model) View() string {
 			for i := 1; i <= 9; i++ {
 				cursor := " "
 				if m.cursor == i-1 {
-					cursor = "->" // Highlight the selected number
+					cursor = "->"
 				}
 				s += fmt.Sprintf("%s %d ", cursor, i)
 			}
@@ -424,6 +424,24 @@ func (m model) View() string {
 }
 
 func main() {
+	// check if tracker exists, if not, create one
+	_, err := os.Stat("tracker.json")
+	if os.IsNotExist(err) {
+		err := spawnTracker()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	// if enough time has passed, update tracker.json
+	currentTime := time.Now()
+	lastUpdateTime, err := getLastUpdateTime()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if currentTime.After(lastUpdateTime.AddDate(0, 1, 0)) {
+		updateTrackerJSON()
+	}
 
 	p := tea.NewProgram(initialModel())
 	if _, err := p.Run(); err != nil {

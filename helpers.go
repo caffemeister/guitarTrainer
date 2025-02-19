@@ -1,13 +1,21 @@
 package main
 
 import (
+	"crypto/md5"
 	"encoding/json"
+	"fmt"
 	"log"
 	"math/rand"
 	"os"
 	"os/exec"
 	"sort"
+	"time"
 )
+
+type TrackerState struct {
+	TrackerFile string    `json:"tracker_file"`
+	LastEdited  time.Time `json:"last_edited"`
+}
 
 func loadTechniques(filename string) (map[string]map[string]int, error) {
 	// Read the file
@@ -114,4 +122,76 @@ func getFourExercises() (map[string]map[string]int, error) {
 		chosenMap[category][randExerc] = bpm
 	}
 	return chosenMap, nil
+}
+
+func getFileHash(file string) (string, error) {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", md5.Sum(data)), nil
+}
+
+func spawnTracker() error {
+	// create a new tracker
+	newTracker, err := os.Create("tracker.json")
+	if err != nil {
+		return err
+	}
+	defer newTracker.Close()
+
+	updateTrackerJSON()
+
+	// create a trackerState file
+	newTrackerStateFile, err := os.Create("trackerState.json")
+	if err != nil {
+		return err
+	}
+	defer newTrackerStateFile.Close()
+
+	// add a state to trackerState
+	state := TrackerState{
+		TrackerFile: "tracker.json",
+		LastEdited:  time.Now(),
+	}
+
+	data, err := json.MarshalIndent(state, "", "  ")
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile("trackerState.json", data, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func getLastUpdateTime() (time.Time, error) {
+	var state TrackerState
+
+	jsonFile, err := os.Open("trackerState.json")
+	if err != nil {
+		return time.Time{}, err
+	}
+	defer jsonFile.Close()
+
+	decoder := json.NewDecoder(jsonFile)
+	if err := decoder.Decode(&state); err != nil {
+		return time.Time{}, err
+	}
+
+	return state.LastEdited, nil
+}
+
+func updateTrackerJSON() error {
+	// copy techniques into tracker
+	tech, err := loadTechniques("techniques.json")
+	if err != nil {
+		return err
+	}
+	err = saveTechniques("tracker.json", tech)
+	if err != nil {
+		return err
+	}
+	return nil
 }
