@@ -1,9 +1,7 @@
 package main
 
 import (
-	"crypto/md5"
 	"encoding/json"
-	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -122,14 +120,6 @@ func getFourExercises() (map[string]map[string]int, error) {
 		chosenMap[category][randExerc] = bpm
 	}
 	return chosenMap, nil
-}
-
-func getFileHash(file string) (string, error) {
-	data, err := os.ReadFile(file)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%x", md5.Sum(data)), nil
 }
 
 func spawnTracker() error {
