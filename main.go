@@ -22,18 +22,19 @@ import (
 // 5. Add tracker to track diff of scores per month
 
 type model struct {
-	cursor        int                       // Cursor for navigating lists
-	currentLevel  string                    // Current level: "main" or "submenu"
-	selectedTech  string                    // Currently selected technique in "main" menu
-	techniques    map[string]map[string]int // Map of techniques to exercises and their BPMs
-	keys          []string                  // Ordered keys for the current menu
-	input         string                    // Input buffer for editing
-	showPopup     bool
-	spinner       spinner.Model
-	showSuccess   bool
-	successTime   time.Time
-	fourExercises map[string]map[string]int
-	exerciseKeys  []string
+	cursor            int                       // Cursor for navigating lists
+	currentLevel      string                    // Current level: "main" or "submenu"
+	selectedTech      string                    // Currently selected technique in "main" menu
+	techniques        map[string]map[string]int // Map of techniques to exercises and their BPMs
+	trackerTechniques map[string]map[string]int
+	keys              []string // Ordered keys for the current menu
+	input             string   // Input buffer for editing
+	showPopup         bool
+	spinner           spinner.Model
+	showSuccess       bool
+	successTime       time.Time
+	fourExercises     map[string]map[string]int
+	exerciseKeys      []string
 }
 
 // Add the names of all techniques that have hotkeys assigned to them here
@@ -51,17 +52,22 @@ func initialModel() model {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	oldValues, err := loadTechniques("tracker.json")
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
 	return model{
-		techniques:   tech,
-		currentLevel: "main",
-		cursor:       0,
-		keys:         getKeys(tech),
-		spinner:      s,
+		techniques:        tech,
+		trackerTechniques: oldValues,
+		currentLevel:      "main",
+		cursor:            0,
+		keys:              getKeys(tech),
+		spinner:           s,
 	}
 }
 
@@ -386,14 +392,27 @@ func (m model) View() string {
 		}
 
 		b.WriteString(nameStyle.Render(fmt.Sprintf("Exercises for %s:", m.selectedTech)))
-		b.WriteString("\n\n")
+		b.WriteString("\n")
+		b.WriteString("\t\t\t\t\t\tLast month\n")
 		exercises := m.techniques[m.selectedTech]
+		trackerExercises := m.trackerTechniques[m.selectedTech]
 		for i, exercise := range m.keys {
 			cursor := " "
 			if i == m.cursor {
 				cursor = "->"
 			}
-			b.WriteString(fmt.Sprintf("%s %s: %d BPM\n", cursor, exercise, exercises[exercise]))
+			output := fmt.Sprintf("%s %s: %d BPM", cursor, exercise, exercises[exercise])
+			lastMonthPosition := 51
+			outputLength := len(output)
+
+			paddingLength := lastMonthPosition - outputLength
+			if paddingLength < 0 {
+				paddingLength = 0
+			}
+
+			padding := strings.Repeat(" ", paddingLength)
+
+			b.WriteString(output + padding + strconv.Itoa(trackerExercises[exercise]) + "\n")
 		}
 		b.WriteString("\n")
 		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [enter] Select • [e] Edit BPM •"))
