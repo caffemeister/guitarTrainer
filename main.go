@@ -443,6 +443,7 @@ func main() {
 		updateTrackerJSON()
 	}
 
+	// run program
 	p := tea.NewProgram(initialModel())
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error starting app: %v", err)
