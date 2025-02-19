@@ -15,16 +15,17 @@ type TrackerState struct {
 	LastEdited  time.Time `json:"last_edited"`
 }
 
-func loadTechniques(filename string) (map[string]map[string]int, error) {
-	// Read the file
+func loadJSON(filename string, dest interface{}) error {
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	return json.Unmarshal(data, dest)
+}
 
-	// Parse the JSON data into a map
+func loadTechniques(filename string) (map[string]map[string]int, error) {
 	var techniques map[string]map[string]int
-	err = json.Unmarshal(data, &techniques)
+	err := loadJSON(filename, &techniques)
 	if err != nil {
 		return nil, err
 	}
@@ -32,36 +33,28 @@ func loadTechniques(filename string) (map[string]map[string]int, error) {
 	return techniques, nil
 }
 
+func saveJSON(filename string, data interface{}) error {
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filename, jsonData, 0644)
+}
+
 func saveTechniques(filename string, techniques map[string]map[string]int) error {
-	// Convert techniques map to JSON
-	data, err := json.MarshalIndent(techniques, "", "  ")
-	if err != nil {
-		return err
-	}
+	return saveJSON(filename, techniques)
+}
 
-	// Write the data to the file
-	err = os.WriteFile(filename, data, 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func launchURL(url string) error {
+	return exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
 }
 
 func launchMetronome() error {
-	err := exec.Command("rundll32", "url.dll,FileProtocolHandler", "https://www.google.com/search?q=metronome").Start()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	return err
+	return launchURL("https://www.google.com/search?q=metronome")
 }
 
 func launchGallopPicking() error {
-	err := exec.Command("rundll32", "url.dll,FileProtocolHandler", "https://www.youtube.com/watch?v=S-6Iq2wuf0A").Start()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	return err
+	return launchURL("https://www.youtube.com/watch?v=S-6Iq2wuf0A")
 }
 
 func getRandNotes(times int) []string {
@@ -85,7 +78,7 @@ func getKeys[T any](m map[string]T) []string {
 	for key := range m {
 		keys = append(keys, key)
 	}
-	// Sort the keys to ensure consistent ordering
+
 	sort.Strings(keys)
 	return keys
 }
@@ -123,53 +116,28 @@ func getFourExercises() (map[string]map[string]int, error) {
 }
 
 func spawnTracker() error {
-	// create a new tracker
-	newTracker, err := os.Create("tracker.json")
-	if err != nil {
+	if err := saveJSON("tracker.json", map[string]map[string]int{}); err != nil {
 		return err
 	}
-	defer newTracker.Close()
 
-	updateTrackerJSON()
-
-	// create a trackerState file
-	newTrackerStateFile, err := os.Create("trackerState.json")
-	if err != nil {
+	if err := updateTrackerJSON(); err != nil {
 		return err
 	}
-	defer newTrackerStateFile.Close()
 
-	// add a state to trackerState
 	state := TrackerState{
 		TrackerFile: "tracker.json",
 		LastEdited:  time.Now(),
 	}
 
-	data, err := json.MarshalIndent(state, "", "  ")
-	if err != nil {
-		return err
-	}
-	err = os.WriteFile("trackerState.json", data, 0644)
-	if err != nil {
-		return err
-	}
-	return nil
+	return saveJSON("trackerState.json", state)
 }
 
 func getLastUpdateTime() (time.Time, error) {
 	var state TrackerState
 
-	jsonFile, err := os.Open("trackerState.json")
-	if err != nil {
+	if err := loadJSON("trackerState.json", &state); err != nil {
 		return time.Time{}, err
 	}
-	defer jsonFile.Close()
-
-	decoder := json.NewDecoder(jsonFile)
-	if err := decoder.Decode(&state); err != nil {
-		return time.Time{}, err
-	}
-
 	return state.LastEdited, nil
 }
 
@@ -179,9 +147,5 @@ func updateTrackerJSON() error {
 	if err != nil {
 		return err
 	}
-	err = saveTechniques("tracker.json", tech)
-	if err != nil {
-		return err
-	}
-	return nil
+	return saveTechniques("tracker.json", tech)
 }
