@@ -1,7 +1,7 @@
 A trainer/BPM tracker program made for personal use.
 
 Add and select any types of techniques you want:
-![Screenshot 2025-02-19 151441](https://github.com/user-attachments/assets/a3df3e3e-72f2-45ce-8b58-94b64a72a448)
+![Screenshot 2025-02-19 183657](https://github.com/user-attachments/assets/0ea01835-f13a-402a-bdd8-7017e8c32d85)
 
 Inside a technique, add any exercises you want and their BPM values. You can edit the BPM values as you like:
 ![Screenshot 2025-02-19 151746](https://github.com/user-attachments/assets/b7fe19ae-595d-4969-8c62-6a252b53f723)
