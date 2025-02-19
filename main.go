@@ -20,6 +20,7 @@ import (
 // 3. Hotkey to launch metronome in Google ✅
 // 4. Integrate the "find notes" trainer thing ✅
 // 5. Add tracker to track diff of scores per month ✅
+// 6. Add metronome hotkey to 4rand exercises ✅
 
 type model struct {
 	cursor            int
@@ -84,6 +85,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selectedTech = m.exerciseKeys[m.cursor]
 				m.showPopup = true
 				m.input = ""
+			case "m":
+				launchMetronome()
 			case "esc":
 				if m.showPopup {
 					m.showPopup = false
@@ -304,7 +307,9 @@ func (m model) View() string {
 		}
 
 		b.WriteString("\n")
-		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [esc] Back • [e] Edit BPM • [q] Quit\n"))
+		b.WriteString(navGuideStyle.Render("[left/right] Navigate • [enter] Select •"))
+		b.WriteString(hotkeyStyle.Render(" [m] Metronome "))
+		b.WriteString(navGuideStyle.Render("• [q] Quit\n"))
 	}
 
 	if m.currentLevel == "noteLocation" {
@@ -340,7 +345,7 @@ func (m model) View() string {
 			b.WriteString(popupStyle.Render(s))
 		}
 
-		b.WriteString("\n")
+		b.WriteString("\n\n")
 		b.WriteString(navGuideStyle.Render("[left/right] Navigate • [enter] Select •"))
 		b.WriteString(hotkeyStyle.Render(" [m] Metronome "))
 		b.WriteString(navGuideStyle.Render("• [q] Quit\n"))
