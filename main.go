@@ -19,16 +19,16 @@ import (
 // 2. Add a "get 4 random exercises to work on today" button ✅
 // 3. Hotkey to launch metronome in Google ✅
 // 4. Integrate the "find notes" trainer thing ✅
-// 5. Add tracker to track diff of scores per month
+// 5. Add tracker to track diff of scores per month ✅
 
 type model struct {
-	cursor            int                       // Cursor for navigating lists
-	currentLevel      string                    // Current level: "main" or "submenu"
-	selectedTech      string                    // Currently selected technique in "main" menu
-	techniques        map[string]map[string]int // Map of techniques to exercises and their BPMs
+	cursor            int
+	currentLevel      string
+	selectedTech      string
+	techniques        map[string]map[string]int
 	trackerTechniques map[string]map[string]int
-	keys              []string // Ordered keys for the current menu
-	input             string   // Input buffer for editing
+	keys              []string
+	input             string
 	showPopup         bool
 	spinner           spinner.Model
 	showSuccess       bool
@@ -52,7 +52,7 @@ func initialModel() model {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	oldValues, err := loadTechniques("tracker.json")
+	trackerValues, err := loadTechniques("tracker.json")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -63,7 +63,7 @@ func initialModel() model {
 
 	return model{
 		techniques:        tech,
-		trackerTechniques: oldValues,
+		trackerTechniques: trackerValues,
 		currentLevel:      "main",
 		cursor:            0,
 		keys:              getKeys(tech),
@@ -142,7 +142,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case "m":
 					launchMetronome()
 				case "enter":
-					selectedNumber := m.cursor + 1 // Convert index to number (1-9)
+					selectedNumber := m.cursor + 1 // index to number (1-9)
 					notes = getRandNotes(selectedNumber)
 					if len(notes) > 0 {
 						notesGotten = true
@@ -307,7 +307,6 @@ func (m model) View() string {
 		b.WriteString(navGuideStyle.Render("[up/down] Navigate • [esc] Back • [e] Edit BPM • [q] Quit\n"))
 	}
 
-	// Rendering for noteLocation
 	if m.currentLevel == "noteLocation" {
 		b.WriteString(nameStyle.Render(fmt.Sprintf("Let's practice locating notes! %s", m.spinner.View())))
 		b.WriteString("\n")
@@ -347,7 +346,6 @@ func (m model) View() string {
 		b.WriteString(navGuideStyle.Render("• [q] Quit\n"))
 	}
 
-	// Main menu rendering
 	if m.currentLevel == "main" {
 		if m.showSuccess {
 			b.WriteString(successStyle.Render("BPM updated!"))
@@ -385,7 +383,6 @@ func (m model) View() string {
 		b.WriteString(hotkeyStyle.Render(" [,] 4 Random Exercises "))
 		b.WriteString(navGuideStyle.Render("• [q] Quit\n"))
 	} else if m.currentLevel == "submenu" {
-		// Submenu rendering
 		if m.showSuccess {
 			b.WriteString(successStyle.Render("BPM updated!"))
 			b.WriteString("\n")
