@@ -1,10 +1,10 @@
 A trainer/BPM tracker program made for personal use.
 
 Add and select any types of techniques you want:
-![Screenshot 2025-02-19 150807](https://github.com/user-attachments/assets/f27cfcee-464e-48a0-9b2e-16e152544625)
+![Screenshot 2025-02-19 151441](https://github.com/user-attachments/assets/a3df3e3e-72f2-45ce-8b58-94b64a72a448)
 
 Inside a technique, add any exercises you want and their BPM values. You can edit the BPM values as you like:
-![Screenshot 2025-02-19 150842](https://github.com/user-attachments/assets/e8e04a68-a583-412b-89f5-706c9fe3f809)
+![Screenshot 2025-02-19 151523](https://github.com/user-attachments/assets/069d314d-8779-4aae-83f7-6f26810b96bd)
 
 Also contains a note location exercise where the app generates a number of random notes. Use that as you will:
 ![Screenshot 2025-01-17 003954](https://github.com/user-attachments/assets/bf05c0a6-8d14-40b9-8a5e-3c6f9c160575)
